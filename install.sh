@@ -5,4 +5,4 @@ if [ `grep -c "4243" /lib/systemd/system/docker.service` -eq '0' ]; then
          service docker restart
 fi
 
-docker run -p 51888:80 --add-host=host.docker.internal:host-gateway -d lwqlwq60/crust-monitor-node:latest
+docker run -p 51888:80 --name="crust-monitor-node" --add-host=host.docker.internal:host-gateway -d lwqlwq60/crust-monitor-node:latest
