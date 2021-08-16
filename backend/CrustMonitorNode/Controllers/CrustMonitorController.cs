@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CrustMonitorNode.Models;
@@ -40,11 +41,14 @@ namespace CrustMonitorNode.Controllers
             _dockerClient = dockerClient;
         }
 
-        // [HttpGet("chain-logs")]
-        // public Task<IActionResult> GetChainLogsAsync()
-        // {
-        //     
-        // }
+        [HttpGet("chain-logs")]
+        public async Task<IActionResult> GetChainLogsAsync()
+        {
+            await CheckContainersAsync();
+            if (string.IsNullOrEmpty(ChainContainer.Id))
+                return Json(Array.Empty<string>());
+            _dockerClient.Containers.GetContainerLogsAsync(ChainContainer.Id, true,)
+        }
 
         private async Task CheckContainersAsync()
         {
