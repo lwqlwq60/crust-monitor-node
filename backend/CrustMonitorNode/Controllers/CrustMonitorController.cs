@@ -19,7 +19,7 @@ namespace CrustMonitorNode.Controllers
         private readonly HttpClient _httpClient;
         private readonly DockerClient _dockerClient;
 
-        private const string DiskDir = "/opt/crust/disk";
+        private const string DiskDir = "/opt/crust/disks";
 
         private static Container ChainContainer = new Container();
         private static Container ApiContainer = new Container();
