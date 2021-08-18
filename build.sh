@@ -1,1 +1,1 @@
-docker build -f docker/Dockefile -t lwqlwq60/crust-monitor-node:latest .
+docker build -f docker/Dockerfile -t lwqlwq60/crust-monitor-node:latest .
