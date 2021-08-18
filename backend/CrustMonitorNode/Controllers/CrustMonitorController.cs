@@ -83,7 +83,7 @@ namespace CrustMonitorNode.Controllers
                 VolumeLabel = drive.VolumeLabel
             };
 
-            return Json(drive);
+            return Json(status);
         }
 
         [HttpGet("chain-logs")]
