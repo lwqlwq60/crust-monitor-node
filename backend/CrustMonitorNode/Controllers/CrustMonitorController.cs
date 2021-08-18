@@ -62,13 +62,28 @@ namespace CrustMonitorNode.Controllers
             foreach (var disk in disks.Keys)
             {
                 var drive = new DriveInfo(disk);
-                disks[disk].Available = Math.Round(drive.AvailableFreeSpace / 1024.0 / 1024.0 / 1024.0, 1);
-                disks[disk].Total = Math.Round(drive.TotalSize / 1024.0 / 1024.0 / 1024.0, 1);
+                disks[disk].Available = Math.Round(drive.AvailableFreeSpace / 1024.0 / 1024.0 / 1024.0, 2);
+                disks[disk].Total = Math.Round(drive.TotalSize / 1024.0 / 1024.0 / 1024.0, 2);
                 disks[disk].Ready = drive.IsReady;
                 disks[disk].VolumeLabel = drive.VolumeLabel;
             }
 
             return Json(disks);
+        }
+
+        [HttpGet("disk-status/{path}")]
+        public IActionResult GetDiskStatus(string path)
+        {
+            var drive = new DriveInfo(path);
+            var status = new DiskStatus
+            {
+                Available = Math.Round(drive.AvailableFreeSpace / 1024.0 / 1024.0 / 1024.0, 1),
+                Total = Math.Round(drive.TotalSize / 1024.0 / 1024.0 / 1024.0, 1),
+                Ready = drive.IsReady,
+                VolumeLabel = drive.VolumeLabel
+            };
+
+            return Json(drive);
         }
 
         [HttpGet("chain-logs")]
@@ -91,6 +106,21 @@ namespace CrustMonitorNode.Controllers
             await CheckContainersAsync();
             return await GetLogsAsync(SWorkerContainer.Id);
         }
+
+        [HttpGet("sworker-a-logs")]
+        public async Task<IActionResult> GetSWorkerALogsAsync()
+        {
+            await CheckContainersAsync();
+            return await GetLogsAsync(SWorkerAContainer.Id);
+        }
+
+        [HttpGet("sworker-b-logs")]
+        public async Task<IActionResult> GetSWorkerBLogsAsync()
+        {
+            await CheckContainersAsync();
+            return await GetLogsAsync(SWorkerBContainer.Id);
+        }
+
 
         [HttpGet("smanager-logs")]
         public async Task<IActionResult> GetSManagerLogsAsync()
@@ -123,6 +153,11 @@ namespace CrustMonitorNode.Controllers
                 await _dockerClient.Containers.ListContainersAsync(new ContainersListParameters { All = true });
             foreach (var container in containers)
             {
+                foreach (var name in container.Names)
+                {
+                    Console.WriteLine(name);
+                }
+
                 if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust")
                 {
                     ChainContainer.Status = container.Status;
