@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using CrustMonitorNode.Models;
 using Docker.DotNet;
@@ -16,23 +19,30 @@ namespace CrustMonitorNode.Controllers
         private readonly HttpClient _httpClient;
         private readonly DockerClient _dockerClient;
 
-        private const string CrustDir = "/opt/crust";
+        private const string DiskDir = "/opt/crust/disk";
+        private const string CrustBaseDir = "/opt/crust/crust-node";
+        private const string CrustApiUri = "http://127.0.0.1:12222/api/v0";
         private const string Chain = "crust";
 
         private static Container ChainContainer = new Container();
         private static Container ApiContainer = new Container();
         private static Container SWorkerContainer = new Container();
+        private static Container SWorkerAContainer = new Container();
+        private static Container SWorkerBContainer = new Container();
         private static Container SManagerContainer = new Container();
         private static Container IpfsContainer = new Container();
+        private static Random Random = new Random();
 
         private static volatile Dictionary<string, Container> CrustContainers =
             new Dictionary<string, Container>
             {
-                {"chain", ChainContainer},
-                {"api", ApiContainer},
-                {"sworker", SWorkerContainer},
-                {"smanager", SManagerContainer},
-                {"ipfs", IpfsContainer}
+                { "chain", ChainContainer },
+                { "api", ApiContainer },
+                { "sworker", SWorkerContainer },
+                { "sworker-a", SWorkerAContainer },
+                { "sworker-b", SWorkerBContainer },
+                { "smanager", SManagerContainer },
+                { "ipfs", IpfsContainer }
             };
 
         public CrustMonitorController(HttpClient httpClient, DockerClient dockerClient)
@@ -41,42 +51,105 @@ namespace CrustMonitorNode.Controllers
             _dockerClient = dockerClient;
         }
 
+        [HttpGet("disk-status")]
+        public IActionResult GetDiskStatus()
+        {
+            var disks = Directory.GetDirectories(DiskDir).ToDictionary(_ => _, _ => new DiskStatus());
+            foreach (var disk in disks.Keys)
+            {
+                var drive = new DriveInfo(disk);
+                disks[disk].Available = Math.Round(drive.AvailableFreeSpace / 1024.0 / 1024.0 / 1024.0, 1);
+                disks[disk].Total = Math.Round(drive.TotalSize / 1024.0 / 1024.0 / 1024.0, 1);
+                disks[disk].Ready = drive.IsReady;
+                disks[disk].VolumeLabel = drive.VolumeLabel;
+            }
+
+            return Json(disks);
+        }
+
         [HttpGet("chain-logs")]
         public async Task<IActionResult> GetChainLogsAsync()
         {
             await CheckContainersAsync();
-            if (string.IsNullOrEmpty(ChainContainer.Id))
-                return Json(Array.Empty<string>());
-            _dockerClient.Containers.GetContainerLogsAsync(ChainContainer.Id, true,)
+            return await GetLogsAsync(ChainContainer.Id);
+        }
+
+        [HttpGet("api-logs")]
+        public async Task<IActionResult> GetApiLogsAsync()
+        {
+            await CheckContainersAsync();
+            return await GetLogsAsync(ApiContainer.Id);
+        }
+
+        [HttpGet("sworker-logs")]
+        public async Task<IActionResult> GetSWorkerLogsAsync()
+        {
+            await CheckContainersAsync();
+            return await GetLogsAsync(SWorkerContainer.Id);
+        }
+
+        [HttpGet("smanager-logs")]
+        public async Task<IActionResult> GetSManagerLogsAsync()
+        {
+            await CheckContainersAsync();
+            return await GetLogsAsync(SManagerContainer.Id);
+        }
+
+        [HttpGet("ipfs-logs")]
+        public async Task<IActionResult> GetIpfsLogsAsync()
+        {
+            await CheckContainersAsync();
+            return await GetLogsAsync(IpfsContainer.Id);
+        }
+
+
+        private async Task<IActionResult> GetLogsAsync(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return NoContent();
+            var logs = await _dockerClient.Containers.GetContainerLogsAsync(id, true,
+                new ContainerLogsParameters { ShowStdout = true });
+            var (stdout, _) = await logs.ReadOutputToEndAsync(CancellationToken.None);
+            return Content(stdout);
         }
 
         private async Task CheckContainersAsync()
         {
             var containers =
-                await _dockerClient.Containers.ListContainersAsync(new ContainersListParameters {All = true});
+                await _dockerClient.Containers.ListContainersAsync(new ContainersListParameters { All = true });
             foreach (var container in containers)
             {
-                if (container.Image == "crustio/crust:latest")
+                if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust")
                 {
                     ChainContainer.Status = container.Status;
                     ChainContainer.Id = container.ID;
                 }
-                else if (container.Image == "crustio/crust-api:latest")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-api")
                 {
                     ApiContainer.Status = container.Status;
                     ApiContainer.Id = container.ID;
                 }
-                else if (container.Image == "crustio/crust-sworker:latest")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-sworker")
                 {
                     SWorkerContainer.Status = container.Status;
                     SWorkerContainer.Id = container.ID;
                 }
-                else if (container.Image == "crustio/crust-smanager:latest")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-sworker-a")
+                {
+                    SWorkerAContainer.Status = container.Status;
+                    SWorkerAContainer.Id = container.ID;
+                }
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-sworker-b")
+                {
+                    SWorkerBContainer.Status = container.Status;
+                    SWorkerBContainer.Id = container.ID;
+                }
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-smanager")
                 {
                     SManagerContainer.Status = container.Status;
                     SManagerContainer.Id = container.ID;
                 }
-                else if (container.Image == "crustio/go-ipfs:latest")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "ipfs")
                 {
                     IpfsContainer.Status = container.Status;
                     IpfsContainer.Id = container.ID;
