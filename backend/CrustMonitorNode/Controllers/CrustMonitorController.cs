@@ -71,10 +71,10 @@ namespace CrustMonitorNode.Controllers
             return Json(disks);
         }
 
-        [HttpGet("disk-status/{path}")]
-        public IActionResult GetDiskStatus(string path)
+        [HttpGet("disk-status/{id}")]
+        public IActionResult GetDiskStatus(string id)
         {
-            var drive = new DriveInfo(path);
+            var drive = new DriveInfo($"{DiskDir}/{id}");
             var status = new DiskStatus
             {
                 Available = Math.Round(drive.AvailableFreeSpace / 1024.0 / 1024.0 / 1024.0, 1),
@@ -153,42 +153,37 @@ namespace CrustMonitorNode.Controllers
                 await _dockerClient.Containers.ListContainersAsync(new ContainersListParameters { All = true });
             foreach (var container in containers)
             {
-                foreach (var name in container.Names)
-                {
-                    Console.WriteLine(name);
-                }
-
-                if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust")
+                if (!container.Names.IsNullOrEmpty() && container.Names.First() == "/crust")
                 {
                     ChainContainer.Status = container.Status;
                     ChainContainer.Id = container.ID;
                 }
-                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-api")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "/crust-api")
                 {
                     ApiContainer.Status = container.Status;
                     ApiContainer.Id = container.ID;
                 }
-                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-sworker")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "/crust-sworker")
                 {
                     SWorkerContainer.Status = container.Status;
                     SWorkerContainer.Id = container.ID;
                 }
-                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-sworker-a")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "/crust-sworker-a")
                 {
                     SWorkerAContainer.Status = container.Status;
                     SWorkerAContainer.Id = container.ID;
                 }
-                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-sworker-b")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "/crust-sworker-b")
                 {
                     SWorkerBContainer.Status = container.Status;
                     SWorkerBContainer.Id = container.ID;
                 }
-                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "crust-smanager")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "/crust-smanager")
                 {
                     SManagerContainer.Status = container.Status;
                     SManagerContainer.Id = container.ID;
                 }
-                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "ipfs")
+                else if (!container.Names.IsNullOrEmpty() && container.Names.First() == "/ipfs")
                 {
                     IpfsContainer.Status = container.Status;
                     IpfsContainer.Id = container.ID;
