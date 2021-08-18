@@ -20,9 +20,6 @@ namespace CrustMonitorNode.Controllers
         private readonly DockerClient _dockerClient;
 
         private const string DiskDir = "/opt/crust/disk";
-        private const string CrustBaseDir = "/opt/crust/crust-node";
-        private const string CrustApiUri = "http://127.0.0.1:12222/api/v0";
-        private const string Chain = "crust";
 
         private static Container ChainContainer = new Container();
         private static Container ApiContainer = new Container();
@@ -49,6 +46,13 @@ namespace CrustMonitorNode.Controllers
         {
             _httpClient = httpClient;
             _dockerClient = dockerClient;
+        }
+
+        [HttpGet("workload")]
+        public async Task<IActionResult> GetWorkloadAsync()
+        {
+            var result = await _httpClient.GetStringAsync("http://host.docker.internal:12222/api/v0/workload");
+            return Content(result);
         }
 
         [HttpGet("disk-status")]
