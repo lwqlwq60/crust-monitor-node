@@ -86,64 +86,65 @@ namespace CrustMonitorNode.Controllers
             return Json(status);
         }
 
-        [HttpGet("chain-logs")]
-        public async Task<IActionResult> GetChainLogsAsync()
+        [HttpGet("chain-logs/{limit}")]
+        public async Task<IActionResult> GetChainLogsAsync(string limit)
         {
             await CheckContainersAsync();
-            return await GetLogsAsync(ChainContainer.Id);
+            return await GetLogsAsync(ChainContainer.Id, limit);
         }
 
-        [HttpGet("api-logs")]
-        public async Task<IActionResult> GetApiLogsAsync()
+        [HttpGet("api-logs/{limit}")]
+        public async Task<IActionResult> GetApiLogsAsync(string limit)
         {
             await CheckContainersAsync();
-            return await GetLogsAsync(ApiContainer.Id);
+            return await GetLogsAsync(ApiContainer.Id, limit);
         }
 
-        [HttpGet("sworker-logs")]
-        public async Task<IActionResult> GetSWorkerLogsAsync()
+        [HttpGet("sworker-logs/{limit}")]
+        public async Task<IActionResult> GetSWorkerLogsAsync(string limit)
         {
             await CheckContainersAsync();
-            return await GetLogsAsync(SWorkerContainer.Id);
+            return await GetLogsAsync(SWorkerContainer.Id, limit);
         }
 
-        [HttpGet("sworker-a-logs")]
-        public async Task<IActionResult> GetSWorkerALogsAsync()
+        [HttpGet("sworker-a-logs/{limit}")]
+        public async Task<IActionResult> GetSWorkerALogsAsync(string limit)
         {
             await CheckContainersAsync();
-            return await GetLogsAsync(SWorkerAContainer.Id);
+            return await GetLogsAsync(SWorkerAContainer.Id, limit);
         }
 
-        [HttpGet("sworker-b-logs")]
-        public async Task<IActionResult> GetSWorkerBLogsAsync()
+        [HttpGet("sworker-b-logs/{limit}")]
+        public async Task<IActionResult> GetSWorkerBLogsAsync(string limit)
         {
             await CheckContainersAsync();
-            return await GetLogsAsync(SWorkerBContainer.Id);
-        }
-
-
-        [HttpGet("smanager-logs")]
-        public async Task<IActionResult> GetSManagerLogsAsync()
-        {
-            await CheckContainersAsync();
-            return await GetLogsAsync(SManagerContainer.Id);
-        }
-
-        [HttpGet("ipfs-logs")]
-        public async Task<IActionResult> GetIpfsLogsAsync()
-        {
-            await CheckContainersAsync();
-            return await GetLogsAsync(IpfsContainer.Id);
+            return await GetLogsAsync(SWorkerBContainer.Id, limit);
         }
 
 
-        private async Task<IActionResult> GetLogsAsync(string id)
+        [HttpGet("smanager-logs/{limit}")]
+        public async Task<IActionResult> GetSManagerLogsAsync(string limit)
+        {
+            await CheckContainersAsync();
+            return await GetLogsAsync(SManagerContainer.Id, limit);
+        }
+
+        [HttpGet("ipfs-logs/{limit}")]
+        public async Task<IActionResult> GetIpfsLogsAsync(string limit)
+        {
+            await CheckContainersAsync();
+            return await GetLogsAsync(IpfsContainer.Id, limit);
+        }
+
+
+        private async Task<IActionResult> GetLogsAsync(string id, string lines)
         {
             if (string.IsNullOrEmpty(id))
                 return NoContent();
             var logs = await _dockerClient.Containers.GetContainerLogsAsync(id, false,
-                new ContainerLogsParameters { ShowStdout = true, Tail = "5000" });
+                new ContainerLogsParameters { ShowStdout = true, Tail = lines });
             var (stdout, _) = await logs.ReadOutputToEndAsync(CancellationToken.None);
+            Console.WriteLine(_);
             return Content(stdout);
         }
 
