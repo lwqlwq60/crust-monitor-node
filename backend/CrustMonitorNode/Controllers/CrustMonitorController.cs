@@ -142,7 +142,7 @@ namespace CrustMonitorNode.Controllers
             if (string.IsNullOrEmpty(id))
                 return NoContent();
             var logs = await _dockerClient.Containers.GetContainerLogsAsync(id, false,
-                new ContainerLogsParameters { ShowStdout = true, Tail = lines });
+                new ContainerLogsParameters { Tail = lines });
             var (stdout, stderr) = await logs.ReadOutputToEndAsync(CancellationToken.None);
             Console.WriteLine(stderr);
             return Content(stdout);
